@@ -9,7 +9,7 @@ define(['immutable'], function(Immutable) {
                 // ouput represents the stream outflow, which cannot be used to push data into the stream
                 output = {
                     bind: function(handler) {
-                        handlers.length == 0 && firstBind && firstBind();   // call provided callback on first subscription
+                        handlers.length == 0 && firstBind && firstBind.call(obj);   // call provided callback on first subscription
                         handlers.push(handler);                             // add new subscriber to list
                         isDefined(current) && handler(current);             // push current value (if any) to new subscriber
                         return output;                                      // return stream for chaining
@@ -18,7 +18,7 @@ define(['immutable'], function(Immutable) {
                         handlers = handlers.filter(function(item) {         // remove subscriber from list
                             return item !== handler;
                         });
-                        handlers.length == 0 && lastUnbind && lastUnbind(); // call provided callback on last unsubscription
+                        handlers.length == 0 && lastUnbind && lastUnbind.call(obj); // call provided callback on last unsubscription
                         return output;                                      // return stream for chaining
                     },
                     // attach a handler function that is triggered and detached at once
