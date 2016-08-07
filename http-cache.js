@@ -1,98 +1,74 @@
 // HTTP cache
-define(['jquery', 'streams'], function($, Stream) {
-    var caches = {};
+define([], function() {
+    var caches = {},
+        request = function(method, uri, data, cb) {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    var data = xhr.responseText;
+                    if (xhr.getResponseHeader('Content-Type').match(/application\/json/)) {
+                        data = JSON.parse(data);
+                    }
+                    cb(data);
+                }
+            }
+            xhr.open(method, uri, true);
+            if (data) {
+                // only JSON for now
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                data = JSON.stringify(data);
+            } else {
+                xhr.setRequestHeader('Accept', 'application/json');
+            }
+            xhr.send(data);
+        },
+        fetch = function(uri, cached) {
+            request('GET', uri, null, function(data) {
+                cached.data = data;
+                cached.handlers.forEach(function(handler) {
+                    handler(data);
+                });
+            });
+        };
 
     return function(id) {
         var id = id || 'global',
-            cache = (caches[id] = caches[id] || {}),
-            defaultHeaders = {},
-            request = function(params) {
-                params.headers = defaultHeaders;
-                return $.ajax(params);
-            },
-            get = function(uri) {
-                var cached = cache[uri] = cache[uri] || {};
+            cache = (caches[id] = caches[id] || {});
 
-                if (!cached.promise) {
-                    cached.promise = cached.promise || request({
-                        url: uri,
-                        type: 'GET',
-                        dataType: 'json'
-                    });
-                }
-                if (cached.stream) {
-                    cached.promise.done(function(data) {
-                        cached.stream.push(data);
-                    }).fail(function() {
-                        cached.stream.push(null);
-                    });
-                }
-                return cached.promise;
-            },
-            // return a stream that publishes the resource fetched from given URI with specified headers
-            http = function(uri) {
-                if (uri) {
-                    var cached = cache[uri] = cache[uri] || {};
-
-                    if (!cached.stream || !cached.promise) {
-                        cached.stream = cached.stream || Stream(function() {
-                            get(uri);
-                        });
+        return {
+            get: function(uri, cb) {
+                var cached;
+                if (cache[uri]) {
+                    cached = cache[uri];
+                    // if resource has already been fetched
+                    if (cached.data != undefined) {
+                        cb(cached.data);
                     }
-
-                    return cached.stream.output();
+                    cached.handlers.push(cb);
                 } else {
-                    return Stream().push(uri).output(); // propagate difference between null and undefined
+                    cached = cache[uri] = {handlers: [cb]};
+                    fetch(uri, cached);
                 }
-            };
-
-        // set default HTTP headers
-        http.setDefaultHeaders = function(headers) {
-            defaultHeaders = headers;
-            http.refresh();
-            return http;
-        };
-        // trigger cache reset for given URI
-        http.refresh = function(uri) {
-            var key;
-
-            // refresh all cache streams that are bound to the specified uri
-            for (key in cache) {
-                if (!uri || key == uri) {
-                    cache[key].promise = null;
-                    get(key);
+            },
+            // reset cache for given URI or whole cache
+            refresh: function(uri) {
+                // refresh all cache streams that are bound to the specified uri
+                for (var key in cache) {
+                    if (!uri || key == uri) {
+                        delete cache[key];
+                        fetch(key);
+                    }
                 }
-            }
-
-            return http;
+            },
+            put: function(uri, data, cb) {
+                request('PUT', uri, data, cb);
+            },
+            post: function(uri, data, cb) {
+                request('POST', uri, data, cb);
+            },
+            delete: function(uri, cb) {
+                request('DELETE', uri, null, cb);
+            },
         };
-
-        http.get = get;
-        http.put = function(uri, data) {
-            return request({
-                url: uri,
-                type: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify(data),
-                dataType: 'json'
-            });
-        };
-        http.post = function(uri, data) {
-            return request({
-                url: uri,
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(data),
-                dataType: 'json'
-            });
-        };
-        http.delete = function(uri) {
-            return request({
-                url: uri,
-                type: 'DELETE'
-            });
-        };
-
-        return http;
     };
 });
