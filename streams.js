@@ -53,7 +53,7 @@ define(['immutable'], function(Immutable) {
                             localHandler = function(value) {
                                 ss && ss.unbind(sHandler);
                                 ss = filter(value);
-                                ss && ss.bind(sHandler);
+                                ss ? ss.bind(sHandler) : ls.push();
                             },
                             ls = stream(function() {
                                 output.bind(localHandler);
