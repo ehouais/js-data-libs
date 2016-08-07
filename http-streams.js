@@ -1,19 +1,23 @@
 define(['streams', 'immutable'], function(Stream, Immutable) {
     var isURI = function(obj) {
             return typeof obj == 'string' && obj.match(/^https?:\/\//); // TODO: more robust
+        },
+        isDefined = function(value) {
+            return value !== void(0);
         };
 
     return function(http) {
-        var link = function(name) {
-                return function(resource) {
-                    return resource && resource.has(name) && isURI(resource.get(name)) && http(resource.get(name)); // TODO: check valid URI ?
-                };
+        var uriToStream = function(uri) {
+                return Stream(function() {
+                    // TODO: prevent sending same data twice in a row
+                    http.get(uri, this.push);
+                }).output();
             },
             prefetch = function() {
                 var paths = Array.prototype.slice.call(arguments),
                     equip = function(value, path) {
                         if (isURI(value)) {
-                            return prefetch(http(value), path);
+                            return prefetch(uriToStream(value), path);
                         } else if (value !== null && typeof value === "object" && value.toJS) {
                             return prefetch(Stream.combine(value.toJS()), path);
                         } else {
@@ -63,7 +67,7 @@ define(['streams', 'immutable'], function(Stream, Immutable) {
             // recursively detect URIs in given value, and returns a stream if found, or the original value
             toStream = function(obj) {
                 if (isURI(obj)) {
-                    return {stream: true, value: http(obj)};
+                    return {stream: true, value: uriToStream(obj)};
                 } else if (Immutable.Iterable.isIterable(obj)) {
                     var resolved = obj.reduce(function(res, item, key) {
                             var r = toStream(item);
@@ -78,29 +82,35 @@ define(['streams', 'immutable'], function(Stream, Immutable) {
                     return {stream: false, value: obj};
                 }
             },
-            linkify = function(stream) {
-                // transform URIs into streams in stream values
+            linkify = function(stream, links) {
                 if (isURI(stream)) {
-                    stream = http(stream);
+                    stream = uriToStream(stream);
                 }
 
-                /*stream = stream.select(function(value) {
-                    var resolved = toStream(value);
-                    return resolved.stream ? resolved.value : stream;
-                });*/
+                if (links) {
+                    // transform URIs into streams in stream values
+                    stream = stream.select(function(value) {
+                        if (!isDefined(value)) return null;
 
-                // transform stream methods to linkify returned stream
-                var select = stream.select;
-                stream.select = function(filter) { return linkify(select.call(stream, filter)); };
-                stream.map = function(filter) { return linkify(stream.map(filter)); };
-                stream.property = function(propName) { return linkify(stream.property(propName)); };
+                        var resolved = toStream(value);
+                        return resolved.stream ? resolved.value : stream;
+                    });
 
-                stream.link = function(propName) {
-                    return stream.select(link(propName));
-                };
-                stream.prefetch = function() {
-                    return stream.select(prefetch.apply(this, Array.prototype.slice.call(arguments)));
-                };
+                    // transform stream methods to linkify returned stream
+                    var select = stream.select;
+                    stream.select = function(filter) { return linkify(select.call(stream, filter), true); };
+                    stream.map = function(filter) { return linkify(stream.map(filter), true); };
+                    stream.property = function(propName) { return linkify(stream.property(propName), true); };
+
+                    stream.link = function(propName) {
+                        return stream.select(function(resource) {
+                            return resource && resource.has(propName) && isURI(resource.get(propName)) && uriToStream(resource.get(propName));
+                        });
+                    };
+                    stream.prefetch = function() {
+                        return stream.select(prefetch.apply(this, Array.prototype.slice.call(arguments)));
+                    };
+                }
 
                 return stream;
             };
