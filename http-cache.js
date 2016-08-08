@@ -55,8 +55,7 @@ define([], function() {
                 // refresh all cache streams that are bound to the specified uri
                 for (var key in cache) {
                     if (!uri || key == uri) {
-                        delete cache[key];
-                        fetch(key);
+                        fetch(key, cache[key]);
                     }
                 }
             },
