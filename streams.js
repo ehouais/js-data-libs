@@ -1,25 +1,24 @@
-define(['immutable'], function(Immutable) {
+define(['immutable', 'observable'], function(Immutable, Observable) {
     var isDefined = function(value) {
             return value !== void(0);
         };
     var stream = function(firstBind, lastUnbind) {
             var obj = {},
-                handlers = [],
+                obs = Observable(),
+                nbHandlers = 0,
                 current,
                 // ouput represents the stream outflow, which cannot be used to push data into the stream
                 output = {
                     bind: function(handler) {
-                        handlers.length == 0 && firstBind && firstBind.call(obj);   // call provided callback on first subscription
-                        handlers.push(handler);                             // add new subscriber to list
-                        isDefined(current) && handler(current);             // push current value (if any) to new subscriber
-                        return output;                                      // return stream for chaining
+                        nbHandlers++ == 0 && firstBind && firstBind.call(obj); // call provided callback on first subscription
+                        obs.bind(handler);                                     // add new subscriber to list
+                        isDefined(current) && handler(current);                // push current value (if any) to new subscriber
+                        return output;                                         // return stream for chaining
                     },
                     unbind: function(handler) {
-                        handlers = handlers.filter(function(item) {         // remove subscriber from list
-                            return item !== handler;
-                        });
-                        handlers.length == 0 && lastUnbind && lastUnbind.call(obj); // call provided callback on last unsubscription
-                        return output;                                      // return stream for chaining
+                        obs.unbind(handler);                                     // remove subscriber from list
+                        --nbHandlers == 0 && lastUnbind && lastUnbind.call(obj); // call provided callback on last unsubscription
+                        return output;                                           // return stream for chaining
                     },
                     // attach a handler function that is triggered and detached at once
                     once: function(handler) {
@@ -87,10 +86,7 @@ define(['immutable'], function(Immutable) {
             obj.push = function(value) {
                 value = Immutable.fromJS(value);
                 if (value !== current) {
-                    current = value;
-                    handlers.forEach(function(handler) {
-                        handler(current);
-                    });
+                    obs.trigger(current = value);
                 }
                 return obj;
             };

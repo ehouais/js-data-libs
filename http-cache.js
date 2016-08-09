@@ -1,62 +1,26 @@
 // HTTP cache
-define([], function() {
-    var caches = {},
-        request = function(method, uri, data, cb) {
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    cb(xhr.responseText);
-                }
-            }
-            xhr.open(method, uri, true);
-            xhr.send(data);
-        },
-        fetch = function(uri, cached) {
-            request('GET', uri, null, function(data) {
-                cached.data = data;
-                cached.handlers.forEach(function(handler) {
-                    handler(data);
-                });
+define(['http', 'cache'], function(Http, Cache) {
+    var lut = {},
+        cache = Cache(function(id, cb) {
+            var params = lut[id];
+            Http.get(params.uri, params.headers, function(result) {
+                cb(result);
             });
+        }),
+        requestHash = function(uri, headers) {
+            return md5(JSON.stringify({
+                uri: uri,
+                headers: Object.keys(headers || {}).sort().map(function(name) { return headers[name]; }) // sorted to be canonical
+            }));
         };
 
-    return function(id) {
-        var id = id || 'global',
-            cache = (caches[id] = caches[id] || {});
+    return {
+        get: function(uri, headers, cb) {
+            var hash = requestHash(uri, headers);
 
-        return {
-            get: function(uri, cb) {
-                var cached;
-                if (cache[uri]) {
-                    cached = cache[uri];
-                    // if resource has already been fetched
-                    if (cached.data != undefined) {
-                        cb(cached.data);
-                    }
-                    cached.handlers.push(cb);
-                } else {
-                    cached = cache[uri] = {handlers: [cb]};
-                    fetch(uri, cached);
-                }
-            },
-            // reset cache for given URI or whole cache
-            refresh: function(uri) {
-                // refresh all cache streams that are bound to the specified uri
-                for (var key in cache) {
-                    if (!uri || key == uri) {
-                        fetch(key, cache[key]);
-                    }
-                }
-            },
-            put: function(uri, data, cb) {
-                request('PUT', uri, data, cb);
-            },
-            post: function(uri, data, cb) {
-                request('POST', uri, data, cb);
-            },
-            delete: function(uri, cb) {
-                request('DELETE', uri, null, cb);
-            },
-        };
+            lut[hash] = {uri: uri, headers: headers};
+            cache.get(hash, cb);
+        },
+        purge: cache.purge.bind(this);
     };
 });
