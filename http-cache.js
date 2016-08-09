@@ -5,21 +5,10 @@ define([], function() {
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
-                    var data = xhr.responseText;
-                    if (xhr.getResponseHeader('Content-Type').match(/application\/json/)) {
-                        data = JSON.parse(data);
-                    }
-                    cb(data);
+                    cb(xhr.responseText);
                 }
             }
             xhr.open(method, uri, true);
-            if (data) {
-                // only JSON for now
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                data = JSON.stringify(data);
-            } else {
-                xhr.setRequestHeader('Accept', 'application/json');
-            }
             xhr.send(data);
         },
         fetch = function(uri, cached) {
