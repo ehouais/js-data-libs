@@ -11,12 +11,12 @@ define(['immutable', 'observable'], function(Immutable, Observable) {
                 output = {
                     bind: function(handler) {
                         nbHandlers++ == 0 && firstBind && firstBind.call(obj); // call provided callback on first subscription
-                        obs.bind(handler);                                     // add new subscriber to list
+                        obs.object().bind(handler);                            // add new subscriber to list
                         isDefined(current) && handler(current);                // push current value (if any) to new subscriber
                         return output;                                         // return stream for chaining
                     },
                     unbind: function(handler) {
-                        obs.unbind(handler);                                     // remove subscriber from list
+                        obs.object().unbind(handler);                            // remove subscriber from list
                         --nbHandlers == 0 && lastUnbind && lastUnbind.call(obj); // call provided callback on last unsubscription
                         return output;                                           // return stream for chaining
                     },
