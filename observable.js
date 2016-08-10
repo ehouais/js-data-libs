@@ -17,7 +17,7 @@ define([], function() {
 
         observable.trigger = function(value) {
             handlers.forEach(function(handler) {
-                handler(current);
+                handler(value);
             });
         };
         observable.object = function() {
