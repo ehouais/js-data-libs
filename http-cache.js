@@ -3,8 +3,8 @@ define(['http', 'cache'], function(Http, Cache) {
     var lut = {},
         cache = Cache(function(id, cb) {
             var params = lut[id];
-            Http.get(params.uri, params.headers, function(result) {
-                cb(result);
+            Http.get(params.uri, params.headers, function(body, status, headers) {
+                cb({body: body, status: status, headers: headers});
             });
         }),
         requestHash = function(uri, headers) {
@@ -19,7 +19,9 @@ define(['http', 'cache'], function(Http, Cache) {
             var hash = requestHash(uri, headers);
 
             lut[hash] = {uri: uri, headers: headers};
-            cache.get(hash, cb);
+            cache.get(hash, function(data) {
+                cb(data.body, data.status, data.headers);
+            });
         },
         purge: cache.purge.bind(this)
     };
