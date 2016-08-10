@@ -9,8 +9,17 @@ define(['streams', 'immutable'], function(Stream, Immutable) {
     return function(http) {
         var uriToStream = function(uri) {
                 return Stream(function() {
-                    // TODO: prevent sending same data twice in a row
-                    http.get(uri, this.push);
+                    var stream = this;
+                    http.get(uri, {}, function(body, status, headers) {
+                        if (status == '200') {
+                            if (headers['Content-Type'].indexOf('application/json') != -1) {
+                                body = JSON.parse(body);
+                            }
+                            stream.push(body);
+                        } else {
+                            stream.push();
+                        }
+                    });
                 }).output();
             },
             prefetch = function() {
