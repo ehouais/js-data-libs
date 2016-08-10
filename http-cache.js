@@ -8,10 +8,10 @@ define(['http', 'cache'], function(Http, Cache) {
             });
         }),
         requestHash = function(uri, headers) {
-            return md5(JSON.stringify({
+            return JSON.stringify({
                 uri: uri,
                 headers: Object.keys(headers || {}).sort().map(function(name) { return headers[name]; }) // sorted to be canonical
-            }));
+            });
         };
 
     return {
