@@ -1,9 +1,16 @@
 define([], function() {
-    var request = function(method, uri, headers, data, cb) {
+    var parseHeaders = function(headers) {
+            return headers.split('\n').reduce(function(map, line) {
+                var tokens = line.match(/([^\:]+)\:(.*)/);
+                if (tokens) map[tokens[1]] = tokens[2];
+                return map;
+            }, {});
+        },
+        request = function(method, uri, headers, data, cb) {
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
-                    cb(xhr.responseText);
+                    cb(xhr.responseText, xhr.status, parseHeaders(xhr.getAllResponseHeaders()));
                 }
             }
             xhr.open(method, uri, true);
