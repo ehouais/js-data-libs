@@ -7,7 +7,7 @@ define(['http', 'cache'], function(Http, Cache) {
                 cb({body: body, status: status, headers: headers});
             });
         }),
-        requestHash = function(uri, headers) {
+        requestId = function(uri, headers) {
             return JSON.stringify({
                 uri: uri,
                 headers: Object.keys(headers || {}).sort().map(function(name) { return headers[name]; }) // sorted to be canonical
@@ -16,10 +16,10 @@ define(['http', 'cache'], function(Http, Cache) {
 
     return {
         get: function(uri, headers, cb) {
-            var hash = requestHash(uri, headers);
+            var id = requestId(uri, headers);
 
-            lut[hash] = {uri: uri, headers: headers};
-            cache.get(hash, function(data) {
+            lut[id] = {uri: uri, headers: headers};
+            cache.get(id, function(data) {
                 cb(data.body, data.status, data.headers);
             });
         },
