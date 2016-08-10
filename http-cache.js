@@ -21,6 +21,6 @@ define(['http', 'cache'], function(Http, Cache) {
             lut[hash] = {uri: uri, headers: headers};
             cache.get(hash, cb);
         },
-        purge: cache.purge.bind(this);
+        purge: cache.purge.bind(this)
     };
 });
