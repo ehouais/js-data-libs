@@ -51,7 +51,7 @@ define(['immutable', 'observable'], function(Immutable, Observable) {
                             },
                             localHandler = function(value) {
                                 ss && ss.unbind(sHandler);
-                                ss = filter(value);
+                                ss = filter.call(output, value);
                                 ss ? ss.bind(sHandler) : ls.push();
                             },
                             ls = stream(function() {
