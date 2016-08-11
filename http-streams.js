@@ -119,6 +119,8 @@ define(['streams', 'immutable'], function(Stream, Immutable) {
             return stream;
         };
 
+        hs.refresh = refresh.bind(this);
+
         return hs;
     }
 });
