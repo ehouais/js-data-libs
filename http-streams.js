@@ -4,9 +4,11 @@ define(['streams', 'immutable'], function(Stream, Immutable) {
         };
 
     return function(http) {
-        var uriToStream = function(uri) {
-                return Stream(function() {
-                    var stream = this;
+        var streams = {},
+            refresh = function(uri) {
+                var stream = streams[uri];
+
+                if (stream) {
                     http.get(uri, {}, function(body, status, headers) {
                         if (status == '200') {
                             if (headers['Content-Type'].indexOf('application/json') != -1) {
@@ -17,7 +19,22 @@ define(['streams', 'immutable'], function(Stream, Immutable) {
                             stream.push();
                         }
                     });
-                }).output();
+                }
+            },
+            uriToStream = function(uri) {
+                var stream;
+
+                if (uri) {
+                    stream = streams[uri];
+
+                   if (!stream) {
+                       stream = streams[uri] = Stream(function() {
+                           refresh(uri);
+                       });
+                   }
+
+                   return stream.output();
+               }
             },
             prefetch = function() {
                 var paths = Array.prototype.slice.call(arguments),
@@ -72,8 +89,9 @@ define(['streams', 'immutable'], function(Stream, Immutable) {
             };
 
         var hs = function(uri) {
-            return isURI(uri) ? uriToStream(uri) : uri.select(uriToStream);
-        }
+                return isURI(uri) ? uriToStream(uri) : uri.select(uriToStream);
+            };
+
         hs.linkify = function(stream) {
             // Add 2 methods and transform original methods
             // to propagate the new methods to the streams built from this one
