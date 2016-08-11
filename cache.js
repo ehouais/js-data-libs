@@ -19,7 +19,7 @@ define([], function() {
 
                 }
             },
-            purge: function(id) {
+            empty: function(id) {
                 cache = {};
             }
         };

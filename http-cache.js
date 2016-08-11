@@ -23,6 +23,6 @@ define(['http', 'cache'], function(Http, Cache) {
                 cb(data.body, data.status, data.headers);
             });
         },
-        purge: cache.purge.bind(this)
+        empty: cache.empty.bind(this)
     };
 });
