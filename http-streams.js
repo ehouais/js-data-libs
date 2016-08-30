@@ -88,25 +88,25 @@ define(['streams', 'immutable'], function(Stream, Immutable) {
                 };
             };
 
+        // uri can be an URI or an URI stream
         var hs = function(uri) {
                 return isURI(uri) ? uriToStream(uri) : uri.select(uriToStream);
             };
 
-        hs.linkify = function(stream) {
-            // Add 2 methods and transform original methods
+            // Overload original methods
             // to propagate the new methods to the streams built from this one
+        var overload = function(stream, methodName) {
+                var original = stream[methodName];
+                stream[methodName] = (function() {
+                    return linkify(original.apply(this, Array.prototype.slice.call(arguments)))
+                }).bind(stream);
+            };
+        var linkify = function(stream) {
+            overload(stream, 'select');
+            overload(stream, 'map');
+            overload(stream, 'property');
 
-            var overload = function(methodName) {
-                    var original = stream[methodName];
-                    stream[methodName] = (function() {
-                        return hs.linkify(original.apply(this, Array.prototype.slice.call(arguments)))
-                    }).bind(stream);
-                };
-
-            overload('select');
-            overload('map');
-            overload('property');
-
+            // Add 2 new methods to make use of URIs in streamed objetcs
             stream.link = function(propName) {
                 return stream.select(function(resource) {
                     return resource && resource.has(propName) && isURI(resource.get(propName)) && uriToStream(resource.get(propName));
@@ -119,6 +119,10 @@ define(['streams', 'immutable'], function(Stream, Immutable) {
             return stream;
         };
 
+        hs.linkify = function(stream) {
+            if (isURI(stream)) stream = uriToStream(stream);
+            return linkify(stream);
+        };
         hs.refresh = refresh.bind(this);
 
         return hs;
