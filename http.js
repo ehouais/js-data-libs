@@ -2,7 +2,7 @@ define([], function() {
     var parseHeaders = function(headers) {
             return headers.split('\n').reduce(function(map, line) {
                 var tokens = line.match(/([^\:]+)\:(.*)/);
-                if (tokens) map[tokens[1]] = tokens[2];
+                if (tokens) map[tokens[1]] = tokens[2].trim();
                 return map;
             }, {});
         },
