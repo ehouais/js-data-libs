@@ -12,10 +12,10 @@ define([], function() {
             if (cors) {
                 if ('withCredentials' in xhr) {
                     xhr.withCredentials = true;
-                    xhr.open('GET', uri, true);
+                    xhr.open(method, uri, true);
                 } else if (typeof XDomainRequest != 'undefined') {
                     xhr = new XDomainRequest();
-                    xhr.open('GET', uri);
+                    xhr.open(method, uri);
                 } else {
                     throw new Error('CORS not supported');
                 }
@@ -26,8 +26,6 @@ define([], function() {
                     cb(xhr.responseText, xhr.status, parseHeaders(xhr.getAllResponseHeaders()));
                 }
             }
-
-            xhr.open(method, uri, true);
 
             if (headers) {
                 for(var name in headers) {
