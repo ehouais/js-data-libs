@@ -42,6 +42,19 @@ define(['immutable', 'observable'], function(Immutable, Observable) {
                             });
                         return ls.output();
                     },
+                    amap: function(filter) { // filter = function(Immutable) > cb(value)
+                        var localHandler = function(value) {
+                                filter(value, function(data) {
+                                    ls.push(data);
+                                });
+                            },
+                            ls = stream(function() {
+                                output.bind(localHandler);
+                            }, function() {
+                                output.unbind(localHandler);
+                            });
+                        return ls.output();
+                    },
                     // return a stream selected using the value from the current stream and the selector/generator function
                     select: function(filter) { // filter = function(Immutable) > stream
                         var ls, // new stream
