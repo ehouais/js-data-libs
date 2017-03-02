@@ -103,7 +103,7 @@ define(['immutable', 'observable'], function(Immutable, Observable) {
                     // return a stream that publishes the property value (accessible with get()) of object values from the current stream
                     property: function(propName) {
                         return output.map(function(obj) {
-                            return obj && obj.get && obj.get(propName)
+                            if (obj && obj.has && obj.has(propName)) return obj.get(propName);
                         });
                     }
                 };
