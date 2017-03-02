@@ -22,14 +22,8 @@ define([], function() {
             }
 
             xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    cb(xhr.responseText, xhr.status, parseHeaders(xhr.getAllResponseHeaders()));
-                }
-            }
-
-            if (headers) {
-                for(var name in headers) {
-                    xhr.setRequestHeader(name, headers[name]);
+                if (this.readyState === 4 && this.status === 200) {
+                    cb(this.response, this.status, parseHeaders(this.getAllResponseHeaders()));
                 }
             }
 
