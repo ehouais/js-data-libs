@@ -6,7 +6,7 @@ define([], function() {
                 return map;
             }, {});
         },
-        request = function(method, uri, headers, data, cb, cors) {
+        request = function(method, uri, data, cb, cors, before) {
             var xhr = new XMLHttpRequest();
 
             if (cors) {
@@ -27,21 +27,22 @@ define([], function() {
                 }
             }
 
+            before && before(xhr);
             xhr.send(data);
         };
 
     return {
-        get: function(uri, headers, cb, cors) {
-            request('GET', uri, headers, null, cb, cors);
+        get: function(uri, cb, cors, before) {
+            request('GET', uri, null, cb, cors, before);
         },
-        put: function(uri, headers, data, cb, cors) {
-            request('PUT', uri, headers, data, cb, cors);
+        put: function(uri, data, cb, cors, before) {
+            request('PUT', uri, data, cb, cors, before);
         },
-        post: function(uri, headers, data, cb, cors) {
-            request('POST', uri, headers, data, cb, cors);
+        post: function(uri, data, cb, cors, before) {
+            request('POST', uri, data, cb, cors, before);
         },
-        delete: function(uri, headers, cb, cors) {
-            request('DELETE', uri, headers, null, cb, cors);
+        delete: function(uri, cb, cors, before) {
+            request('DELETE', uri, null, cb, cors, before);
         },
     }
 })
