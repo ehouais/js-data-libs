@@ -6,48 +6,42 @@ define([], function() {
                 return map;
             }, {});
         },
-        request = function(method, uri, headers, data, cb, cors) {
+        request = function(method, uri, data, cb, cors, before) {
             var xhr = new XMLHttpRequest();
 
             if (cors) {
                 if ('withCredentials' in xhr) {
                     xhr.withCredentials = true;
-                    xhr.open(method, uri, true);
                 } else if (typeof XDomainRequest != 'undefined') {
                     xhr = new XDomainRequest();
-                    xhr.open(method, uri);
                 } else {
                     throw new Error('CORS not supported');
                 }
             }
+            xhr.open(method, uri);
 
             xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    cb(xhr.responseText, xhr.status, parseHeaders(xhr.getAllResponseHeaders()));
+                if (this.readyState === 4 && this.status < 400) {
+                    cb(this.response, this.status, parseHeaders(this.getAllResponseHeaders()));
                 }
             }
 
-            if (headers) {
-                for(var name in headers) {
-                    xhr.setRequestHeader(name, headers[name]);
-                }
-            }
-
+            before && before(xhr);
             xhr.send(data);
         };
 
     return {
-        get: function(uri, headers, cb, cors) {
-            request('GET', uri, headers, null, cb, cors);
+        get: function(uri, cb, cors, before) {
+            request('GET', uri, null, cb, cors, before);
         },
-        put: function(uri, headers, data, cb, cors) {
-            request('PUT', uri, headers, data, cb, cors);
+        put: function(uri, data, cb, cors, before) {
+            request('PUT', uri, data, cb, cors, before);
         },
-        post: function(uri, headers, data, cb, cors) {
-            request('POST', uri, headers, data, cb, cors);
+        post: function(uri, data, cb, cors, before) {
+            request('POST', uri, data, cb, cors, before);
         },
-        delete: function(uri, headers, cb, cors) {
-            request('DELETE', uri, headers, null, cb, cors);
+        delete: function(uri, cb, cors, before) {
+            request('DELETE', uri, null, cb, cors, before);
         },
     }
 })

@@ -42,6 +42,19 @@ define(['immutable', 'observable'], function(Immutable, Observable) {
                             });
                         return ls.output();
                     },
+                    amap: function(filter) { // filter = function(Immutable) > cb(value)
+                        var localHandler = function(value) {
+                                filter(value, function(data) {
+                                    ls.push(data);
+                                });
+                            },
+                            ls = stream(function() {
+                                output.bind(localHandler);
+                            }, function() {
+                                output.unbind(localHandler);
+                            });
+                        return ls.output();
+                    },
                     // return a stream selected using the value from the current stream and the selector/generator function
                     select: function(filter) { // filter = function(Immutable) > stream
                         var ls, // new stream
@@ -59,26 +72,38 @@ define(['immutable', 'observable'], function(Immutable, Observable) {
                             }, function() {
                                 output.unbind(localHandler);
                             });
+
                         return ls.output();
                     },
-                    // return a stream that publishes data objects from the current stream augmented/altered with one or more properties that may be static values, streams or evaluation of function
-                    merge: function(properties, sparse) {
-                        return output.select(function(object) {
-                            var property;
+                    // Publish data from current stream possibly altered by data coming from given stream
+                    merge: function(str, merger) {
+                        var current,
+                            localHandler = function(data) {
+                                current = data;
+                                update();
+                            },
+                            mcurrent,
+                            mHandler = function(data) {
+                                mcurrent = data;
+                                update();
+                            },
+                            update = function() {
+                                ls.push(isDefined(current) && isDefined(mcurrent) ? merger(current, mcurrent) : current);
+                            },
+                            ls = stream(function() {
+                                output.bind(localHandler);
+                                str.bind(mHandler);
+                            }, function() {
+                                output.unbind(localHandler);
+                                str.unbind(mHandler);
+                            });
 
-                            if (object) {
-                                for (var key in properties) {
-                                    property = properties[key];
-                                    object = object.set(key, {}.toString.call(property) === '[object Function]' && !property.merge ? property(object): property);
-                                }
-                                return stream.combine(object.toJS(), sparse);
-                            }
-                        });
+                        return ls.output();
                     },
                     // return a stream that publishes the property value (accessible with get()) of object values from the current stream
                     property: function(propName) {
                         return output.map(function(obj) {
-                            return obj && obj.get && obj.get(propName)
+                            if (obj && obj.has && obj.has(propName)) return obj.get(propName);
                         });
                     }
                 };
@@ -88,6 +113,7 @@ define(['immutable', 'observable'], function(Immutable, Observable) {
                 if (value !== current) {
                     obs.trigger(current = value);
                 }
+
                 return obj;
             };
             obj.output = function() {
