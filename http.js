@@ -21,7 +21,7 @@ define([], function() {
             xhr.open(method, uri);
 
             xhr.onreadystatechange = function() {
-                if (this.readyState === 4 && this.status === 200) {
+                if (this.readyState === 4 && this.status < 400) {
                     cb(this.response, this.status, parseHeaders(this.getAllResponseHeaders()));
                 }
             }
