@@ -43,5 +43,8 @@ define([], function() {
         delete: function(uri, cb, cors, before) {
             request('DELETE', uri, null, cb, cors, before);
         },
+        patch: function(uri, data, cb, cors, before) {
+            request('PATCH', uri, data, cb, cors, before);
+        },
     }
 })
