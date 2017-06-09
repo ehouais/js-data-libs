@@ -1,7 +1,7 @@
 define([], function() {
     return {
         dataFromCsv: function(str, cols) {
-            return str.split('\n').map(function(row, j) {
+            return str.trim().split('\n').map(function(row, j) {
                 return row.split(',').map(function(cell, i) {
                     switch(cols[i]) {
                     case 'text':
