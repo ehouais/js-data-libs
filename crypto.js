@@ -12,7 +12,7 @@ define(['sjcl'], function(sjcl) {
                 if (obj.iv && obj.v && obj.iter && obj.ks && obj.ts && obj.mode && obj.cipher && obj.salt && obj.ct) {
                     // try to decipher data
                     try {
-                        return sjcl.decrypt(localKey(), data);
+                        return sjcl.decrypt(key, data);
                     } catch(e) {
                         window.alert('Invalid key or corrupt cipher text');
                     }
