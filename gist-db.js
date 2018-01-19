@@ -1,10 +1,10 @@
 define(['http'], function(Http) {
-    return function(user, password, id) {
+    return function(creds, id) {
         var uri = 'https://api.github.com/gists/'+id,
-            auth = btoa(user+':'+password),
+            auth = 'Basic '+btoa(creds.user+':'+creds.password),
             addHeaders = function(xhr) {
                 xhr.setRequestHeader ('Accept', 'application/vnd.github.v3+json');
-                xhr.setRequestHeader ('Authorization', 'Basic '+auth);
+                xhr.setRequestHeader ('Authorization', auth);
             },
             get = function(cb) {
                 Http.get(uri, function(json) {
