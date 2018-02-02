@@ -1,7 +1,7 @@
 define(['sjcl'], function(sjcl) {
     return {
         cipher: function(key, data) {
-            return sjcl.encrypt(key, data, {ks: 256});
+            return sjcl.encrypt(key(), data, {ks: 256});
         },
         decipher: function(key, data) {
             try {
@@ -12,7 +12,7 @@ define(['sjcl'], function(sjcl) {
                 if (obj.iv && obj.v && obj.iter && obj.ks && obj.ts && obj.mode && obj.cipher && obj.salt && obj.ct) {
                     // try to decipher data
                     try {
-                        return sjcl.decrypt(key, data);
+                        return sjcl.decrypt(key(), data);
                     } catch(e) {
                         window.alert('Invalid key or corrupt cipher text');
                     }
