@@ -1,11 +1,28 @@
-define(['on-demand'], function(OnDemand) {
+define(function() {
     var resolved = function(data) {
             return new Promise(function(resolve, reject) {
                 resolve(data);
             });
+        },
+        decipherObj = function(obj, key) {
+            // test if obj is a SJCL-ciphered structure
+            if (obj.iv && obj.v && obj.iter && obj.ks && obj.ts && obj.mode && obj.cipher && obj.salt && obj.ct) {
+                return new Promise(function(resolve, reject) {
+                    require(['sjcl'], function(sjcl) {
+                        try {
+                            // try to decipher data
+                            resolve(sjcl.decrypt(key(), JSON.stringify(obj)));
+                        } catch(e) {
+                            reject('Invalid key or corrupt cipher text');
+                        }
+                    });
+                });
+            } else {
+                return obj;
+            }
         };
 
-    return function(str) {
+    return function(str, key) {
         var match,
             str;
 
@@ -23,24 +40,34 @@ define(['on-demand'], function(OnDemand) {
                 return response.body();
             });
 
-        // mLab document or gist file
+        // mLab document
         } else if (match = str.match(/db\/(.+)/)) {
             return new Promise(function(resolve, reject) {
                 require(['mlab'], function(Mlab) {
                     var id = match[1],
                         db = Mlab('misc', 'webviews');
             
-                    db.select({query: {id: id}, unique: true}).then(function(response) {
-                        if (response) {
-                            return response.body();
-                        } else {
-                            return new Promise(function(resolve, reject) {
-                                require(['gist'], function(Gist) {
-                                    Gist().get(id).then(resolve);
-                                });
-                            });
-                        }
-                    }).then(resolve);
+                    db.select({query: {id: id}, unique: true}).then(function(doc) {
+                        return decipherObj(doc.value, key);
+                    }).then(resolve).catch(function(error) {
+                        console.error('Fetch error: '+error);
+                    });
+                });
+            });
+
+        // gist file
+        } else if (match = str.match(/gs\/(.+)/)) {
+            return new Promise(function(resolve, reject) {
+                require(['gist'], function(Gist) {
+                    Gist().get(id).then(function(str) {
+                        try {
+                            // test whether str is valid JSON
+                            resolve(decipherObj(JSON.parse(str), key));
+                        } catch(e) {
+                            // str is not valid JSON
+                            resolve(str);
+                        }                    
+                    });
                 });
             });
 
