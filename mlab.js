@@ -25,7 +25,14 @@ define(['on-demand'], function(OnDemand) {
                         +(params.unique ? '&fo=true' : ''),
                     {method: 'GET', mode: 'cors', headers: headers}
                 ).then(function(response) {
+                    // response.ok always true, even if doc doesn't exist...
                     return response.json();
+                }).then(function(json) {
+                    if (json) {
+                        return json;
+                    } else {
+                        throw 'Doc not found';
+                    }
                 });
             },
             update: function(query, update) {
